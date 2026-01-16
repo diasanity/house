@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>房價拆款(精確版)</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; font-family: -apple-system, sans-serif; background-color: #f8fafc; }
+        .ios-card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .active-scale:active { transform: scale(0.96); transition: 0.1s; }
+    </style>
+</head>
+<body class="safe-area-inset-top">
+    <div class="px-6 pt-12 pb-6 bg-white border-b border-gray-100 text-center">
+        <h1 class="text-2xl font-black text-gray-800">房價拆款計算機</h1>
+        <p class="text-xs text-gray-400 mt-1">單位：萬元</p>
+    </div>
+
+    <div class="p-5 max-w-md mx-auto space-y-5">
+        <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-400 uppercase ml-1">成交總價 (萬元)</label>
+            <input type="number" id="price" inputmode="decimal" placeholder="例如：1250" 
+                class="w-full bg-white border-2 border-gray-100 rounded-2xl p-5 text-3xl font-bold focus:border-blue-500 outline-none transition-all">
+        </div>
+
+        <button onclick="calc()" class="w-full bg-blue-600 text-white text-xl font-bold py-5 rounded-2xl shadow-lg shadow-blue-200 active-scale">
+            立即拆分
+        </button>
+
+        <div id="res" class="hidden space-y-3">
+            <div class="grid grid-cols-1 gap-3">
+                <div class="ios-card p-5 flex justify-between items-center">
+                    <span class="text-gray-500 font-medium">1. 訂金</span>
+                    <span class="text-xl font-bold text-gray-800">10 萬</span>
+                </div>
+
+                <div class="ios-card p-5 flex justify-between items-center border-l-4 border-blue-400">
+                    <div>
+                        <span class="text-gray-500 font-medium">2. 簽約金</span>
+                        <p class="text-[10px] text-blue-400">無條件進位</p>
+                    </div>
+                    <span id="v2" class="text-xl font-bold text-gray-800">-</span>
+                </div>
+
+                <div class="ios-card p-5 flex justify-between items-center border-l-4 border-green-500">
+                    <div>
+                        <span class="text-gray-500 font-medium">3. 備證用印款</span>
+                        <p class="text-[10px] text-green-500">無條件捨去</p>
+                    </div>
+                    <span id="v3" class="text-xl font-bold text-green-600">-</span>
+                </div>
+
+                <div class="ios-card p-5 flex justify-between items-center border-l-4 border-green-500">
+                    <div>
+                        <span class="text-gray-500 font-medium">4. 交屋保留款</span>
+                        <p class="text-[10px] text-green-500">無條件進位</p>
+                    </div>
+                    <span id="v4" class="text-xl font-bold text-green-600">-</span>
+                </div>
+
+                <div class="ios-card p-5 bg-slate-800 text-white flex justify-between items-center shadow-xl">
+                    <div>
+                        <span class="text-blue-300 font-medium text-sm">5. 金融貸款 (80%)</span>
+                        <p class="text-[10px] text-slate-400">無條件捨去</p>
+                    </div>
+                    <span id="v5" class="text-2xl font-black text-white">-</span>
+                </div>
+            </div>
+            
+            <button onclick="window.scrollTo({top:0, behavior:'smooth'})" class="w-full py-4 text-gray-400 text-sm">重新輸入</button>
+        </div>
+    </div>
+
+    <script>
+        function calc() {
+            let P = parseFloat(document.getElementById('price').value);
+            if (!P || P <= 0) return;
+            
+            // 1. 訂金 (固定)
+            let deposit = 10; 
+            
+            // 2. 金融貸款 (總價*0.8，無條件捨去)
+            let loan = Math.floor(P * 0.8);
+            
+            // 3. 簽約金 (總價*0.1 - 10萬，無條件進位)
+            let contract = Math.ceil((P * 0.1) - deposit);
+            
+            // 剩餘款項拆分
+            let remain = P - loan - deposit - contract;
+            
+            // 4. 備證用印款 (剩餘一半，無條件捨去)
+            let stamping = Math.floor(remain / 2);
+            
+            // 5. 交屋保留款 (剩餘一半，無條件進位)
+            let handover = Math.ceil(remain / 2);
+
+            document.getElementById('v2').innerText = contract.toLocaleString() + ' 萬';
+            document.getElementById('v3').innerText = stamping.toLocaleString() + ' 萬';
+            document.getElementById('v4').innerText = handover.toLocaleString() + ' 萬';
+            document.getElementById('v5').innerText = loan.toLocaleString() + ' 萬';
+            
+            document.getElementById('res').classList.remove('hidden');
+            setTimeout(() => {
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }, 100);
+        }
+    </script>
+</body>
+</html>
