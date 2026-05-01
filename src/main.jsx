@@ -82,6 +82,163 @@ function setByPath(obj, path, value) {
   return next;
 }
 
+function textValue(value) {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return value.map(textValue).filter(Boolean).join('；');
+  if (typeof value === 'object') {
+    return Object.entries(value)
+      .map(([key, val]) => {
+        const txt = textValue(val);
+        return txt ? `${key}：${txt}` : '';
+      })
+      .filter(Boolean)
+      .join('；');
+  }
+  return String(value);
+}
+
+function pick(source, keys, fallback = '') {
+  for (const key of keys) {
+    const value = key.split('.').reduce((cur, part) => (cur ? cur[part] : undefined), source);
+    if (value !== undefined && value !== null && value !== '') return value;
+  }
+  return fallback;
+}
+
+function formatLandIds(value) {
+  if (Array.isArray(value)) return value.map(textValue).join('、');
+  return textValue(value);
+}
+
+function formatLandArea(landArea) {
+  if (!landArea) return '';
+  if (typeof landArea === 'string') return landArea;
+  const parcels = Array.isArray(landArea.parcels) ? landArea.parcels : [];
+  const parcelText = parcels
+    .map((p) => {
+      const id = pick(p, ['id', 'landId', '地號']);
+      const area = pick(p, ['area', 'ping', '坪數']);
+      const sqm = pick(p, ['areaM2', 'sqm', '平方公尺']);
+      const note = pick(p, ['note', '備註']);
+      return [id, area, sqm, note].filter(Boolean).join('／');
+    })
+    .filter(Boolean)
+    .join('；');
+  const total = pick(landArea, ['total', 'totalPing', '總坪數']);
+  return [parcelText, total ? `合計：${total}` : ''].filter(Boolean).join('；');
+}
+
+function normalizeCase(c = {}) {
+  const avgParts = [
+    pick(c, ['avg6']) ? `近半年：${pick(c, ['avg6'])}` : '',
+    pick(c, ['count6']) ? `近半年筆數：${pick(c, ['count6'])}` : '',
+    pick(c, ['avg12']) ? `近一年：${pick(c, ['avg12'])}` : '',
+    pick(c, ['count12']) ? `近一年筆數：${pick(c, ['count12'])}` : '',
+    pick(c, ['adoptedAvg']) ? `採用均價：${pick(c, ['adoptedAvg'])}` : '',
+    pick(c, ['adoptedPeriod']) ? `採用期間：${pick(c, ['adoptedPeriod'])}` : ''
+  ].filter(Boolean).join('；');
+
+  return {
+    builder: textValue(pick(c, ['builder', 'constructionCompany', 'developer', '建設公司'])),
+    project: textValue(pick(c, ['project', 'caseName', 'name', '案名'])),
+    status: textValue(pick(c, ['status', 'type', '類型'])),
+    roomType: textValue(pick(c, ['roomType', 'product', '產品規劃', '房型'])),
+    size: textValue(pick(c, ['size', '坪數', 'area'])),
+    price: textValue(pick(c, ['price', 'priceInfo', 'avgPrice', '近半年均價'])) || avgParts,
+    source: textValue(pick(c, ['source', 'reference', '資料來源'])),
+    note: textValue(pick(c, ['note', 'distance', 'distanceNote', 'location', '備註']))
+  };
+}
+
+function normalizeImportedReport(input) {
+  const base = safeClone(emptyReport);
+
+  if (input?.meta || input?.basic || input?.environment || input?.evaluation) {
+    const merged = {
+      ...base,
+      ...input,
+      meta: { ...base.meta, ...(input.meta || {}) },
+      basic: { ...base.basic, ...(input.basic || {}) },
+      siteStatus: { ...base.siteStatus, ...(input.siteStatus || {}) },
+      environment: { ...base.environment, ...(input.environment || {}) },
+      market: {
+        ...base.market,
+        ...(input.market || {}),
+        pricePrediction: {
+          ...base.market.pricePrediction,
+          ...((input.market && input.market.pricePrediction) || {})
+        }
+      },
+      evaluation: { ...base.evaluation, ...(input.evaluation || {}) }
+    };
+    merged.basic.school = textValue(merged.basic.school);
+    merged.market.productSuggestion = textValue(merged.market.productSuggestion);
+    merged.cases = (input.cases || base.cases).map(normalizeCase);
+    while (merged.cases.length < 4) merged.cases.push({ builder: '', project: '', status: '', roomType: '', size: '', price: '', source: '', note: '' });
+    return merged;
+  }
+
+  base.meta.owner = textValue(pick(input, ['client']));
+  base.meta.researchDate = textValue(pick(input, ['date'])) || today;
+  base.basic.location = textValue(pick(input, ['location']));
+  base.basic.landIdsText = formatLandIds(pick(input, ['landIds']));
+  base.basic.zoning = textValue(pick(input, ['zoning']));
+  base.basic.baseArea = formatLandArea(pick(input, ['landArea']));
+  base.basic.coverage = textValue(pick(input, ['coverage']));
+  base.basic.far = textValue(pick(input, ['far']));
+  base.basic.roadCondition = textValue(pick(input, ['road']));
+  base.basic.landPrice = textValue(pick(input, ['landPrice'])) || '待複核';
+  base.basic.school = textValue(pick(input, ['school']));
+  base.basic.village = textValue(pick(input, ['village']));
+
+  base.siteStatus.summary = textValue(pick(input, ['siteSummary']));
+  base.siteStatus.north = textValue(pick(input, ['north']));
+  base.siteStatus.west = textValue(pick(input, ['west']));
+  base.siteStatus.south = textValue(pick(input, ['south']));
+  base.siteStatus.east = textValue(pick(input, ['east']));
+
+  base.environment.traffic = textValue(pick(input, ['traffic']));
+  base.environment.living = textValue(pick(input, ['amenity', 'living']));
+  base.environment.publicFacilities = textValue(pick(input, ['publicWorks']));
+
+  base.market.regionalSales = textValue(pick(input, ['market']));
+  base.market.productSuggestion = textValue(pick(input, ['product']));
+  base.market.pricePrediction.residential2F = [
+    pick(input, ['listPrice']) ? `住家表價：${textValue(input.listPrice)}` : '',
+    pick(input, ['dealAvg']) ? `成交均價：${textValue(input.dealAvg)}` : '',
+    pick(input, ['firstWave']) ? `首波成交帶：${textValue(input.firstWave)}` : '',
+    pick(input, ['highFloor']) ? `高樓拉價：${textValue(input.highFloor)}` : ''
+  ].filter(Boolean).join('；');
+  base.market.pricePrediction.residential1F = textValue(pick(input, ['firstFloor', 'residential1F']));
+  base.market.pricePrediction.shop = [
+    pick(input, ['shopPrice']) ? `店面價格：${textValue(input.shopPrice)}` : '',
+    pick(input, ['shopDefault']) ? `預設：${textValue(input.shopDefault)}` : '',
+    pick(input, ['shopAdjust']) ? `調整：${textValue(input.shopAdjust)}` : ''
+  ].filter(Boolean).join('；');
+  base.market.pricePrediction.parking = [
+    pick(input, ['parkingPrice']) ? `建議：${textValue(input.parkingPrice)}` : '',
+    pick(input, ['parkingFormula']) ? `公式：${textValue(input.parkingFormula)}` : '',
+    pick(input, ['parkingMarket']) ? `市場：${textValue(input.parkingMarket)}` : ''
+  ].filter(Boolean).join('；');
+  base.market.pricePrediction.note = textValue(pick(input, ['parkingNote', 'mapNote'])) || base.market.pricePrediction.note;
+
+  base.cases = (Array.isArray(input.cases) ? input.cases : []).map(normalizeCase);
+  while (base.cases.length < 4) base.cases.push({ builder: '', project: '', status: '', roomType: '', size: '', price: '', source: '', note: '' });
+
+  base.evaluation.advantages = [textValue(pick(input, ['adv1'])), textValue(pick(input, ['adv2'])), textValue(pick(input, ['adv3']))];
+  base.evaluation.disadvantages = [textValue(pick(input, ['weak1'])), textValue(pick(input, ['weak2'])), textValue(pick(input, ['weak3']))];
+  base.evaluation.conclusion = textValue(pick(input, ['conclusion']));
+  base.evaluation.pendingItems = [
+    textValue(pick(input, ['mapNote'])),
+    '土地面積需以謄本／地籍資料複核',
+    '建蔽率、容積率需以都市計畫書／分區證明複核',
+    '學區、里別需以教育局與戶政資料複核'
+  ].filter(Boolean);
+
+  return base;
+}
+
 function Input({ label, value, onChange, placeholder, textarea = false }) {
   return (
     <label className="field">
@@ -206,10 +363,11 @@ function App() {
   const importJson = () => {
     try {
       const parsed = JSON.parse(jsonText);
-      setReport(parsed);
-      setJsonText(JSON.stringify(parsed, null, 2));
+      const normalized = normalizeImportedReport(parsed);
+      setReport(normalized);
+      setJsonText(JSON.stringify(normalized, null, 2));
       setTab('edit');
-      setMessage('JSON 已匯入，可直接修改欄位。');
+      setMessage('JSON 已匯入，物件欄位已自動轉成表格可顯示文字。');
     } catch {
       setMessage('JSON 格式錯誤，請確認逗號、引號與大括號。');
     }
