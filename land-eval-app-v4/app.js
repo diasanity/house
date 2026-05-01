@@ -1,1 +1,1 @@
-window.LAND_EVAL_PROMPT_VERSION='final-precision-2026-05-01';
+window.LAND_EVAL_PROMPT_VERSION='final-precision-2026-05-01-updated';
