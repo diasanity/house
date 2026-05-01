@@ -1,1 +1,0 @@
-Land evaluation mobile app. Upload index.html in this folder and enable GitHub Pages.
