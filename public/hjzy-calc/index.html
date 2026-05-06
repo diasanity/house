@@ -15,11 +15,91 @@
 const f={unit:unitInput,size:sizeInput,parking:parkInput,parkingPrice:parkPriceInput,total:totalPrice};
 const items=[['訂金','','固定5萬',p=>p.dep],['簽約金','','總價 6% 減訂金',p=>p.sign],['工程期款第一期','第一區屋頂版完成，開工後約第 19 個月','2%',p=>p.e1],['工程期款第二期','第二區屋頂版完成，開工後約第 26 個月','2%',p=>p.e2],['工程期款第三期','第三區屋頂版完成，開工後約第 32 個月','2%',p=>p.e3],['落架款','全區落架完成，開工後約第 40 個月','3%',p=>p.seal],['銀行貸款','','80%',p=>p.bank],['交屋保留款','','5%',p=>p.handOver]];
 function money(v){return `${Number(v||0).toLocaleString('zh-TW')} 萬`}function show(v,s=''){v=String(v||'').trim();return v?`${v}${s}`:'—'}function calcParts(total){const dep=5,sign=Math.ceil(total*.06)-dep,e1=Math.round(total*.02),e2=Math.round(total*.02),e3=Math.round(total*.02),bank=Math.floor(total*.8),handOver=Math.ceil(total*.05),seal=total-(dep+sign+e1+e2+e3+bank+handOver);return{dep,sign,e1,e2,e3,bank,handOver,seal}}function card(k,v){const d=document.createElement('div');d.className='summary-card';const b=document.createElement('b');b.textContent=k;const s=document.createElement('span');s.textContent=v;d.append(b,s);return d}function row(i,p){const d=document.createElement('div');d.className='row';const n=document.createElement('div');n.className='name';const t=document.createElement('strong');t.textContent=i[0];const m=document.createElement('small');m.textContent=i[1];n.append(t,m);const r=document.createElement('div');r.className='ratio';r.textContent=i[2];const v=document.createElement('div');v.className='value';v.textContent=money(i[3](p));d.append(n,r,v);return d}function snapshot(){const total=parseFloat(f.total.value)||0,p=calcParts(total);return{total,p,summary:[['戶別',show(f.unit.value)],['坪數',show(f.size.value,' 坪')],['車位',show(f.parking.value)],['車位價',show(f.parkingPrice.value,' 萬')]],rows:items.map(i=>({name:i[0],note:i[1],ratio:i[2],value:i[3](p)}))}}function render(){const s=snapshot();summary.replaceChildren(...s.summary.map(x=>card(x[0],x[1])));rows.replaceChildren(...items.map(i=>row(i,s.p)));totalDisplay.textContent=money(s.total)}
-function drawText(ctx,str,x,y,size,weight='400',color='#111',align='left'){ctx.fillStyle=color;ctx.font=`${weight} ${size}px -apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",Arial,sans-serif`;ctx.textAlign=align;ctx.textBaseline='top';ctx.fillText(str,x,y)}function printText(ctx,str,x,y,size,weight='600',align='left'){drawText(ctx,str,x,y,size,weight,'#111',align)}
-function drawBrandPattern(ctx,x,y,w,h){ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=3;for(let px=x-80;px<x+w+140;px+=160){for(let py=y-80;py<y+h+120;py+=160){ctx.beginPath();ctx.arc(px,py,78,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(px-78,py);ctx.quadraticCurveTo(px,py-72,px+78,py);ctx.stroke();ctx.beginPath();ctx.moveTo(px,py-78);ctx.lineTo(px,py+78);ctx.stroke();ctx.beginPath();ctx.moveTo(px+54,py-78);ctx.lineTo(px+54,py+78);ctx.stroke()}}ctx.strokeStyle='rgba(0,0,0,.18)';ctx.lineWidth=2;for(let px=x;px<x+w;px+=120){ctx.beginPath();ctx.moveTo(px,y);ctx.lineTo(px,y+h);ctx.stroke()}ctx.restore()}
-function drawFlower(ctx,cx,cy,r){ctx.save();ctx.strokeStyle='#e8c99a';ctx.lineWidth=5;for(let i=0;i<8;i++){ctx.save();ctx.translate(cx,cy);ctx.rotate(i*Math.PI/4);ctx.beginPath();ctx.ellipse(0,-r*.58,r*.22,r*.55,0,0,Math.PI*2);ctx.stroke();ctx.restore()}ctx.beginPath();ctx.arc(cx,cy,r*.17,0,Math.PI*2);ctx.stroke();ctx.restore()}
-function buildReportImage(){const s=snapshot(),c=document.createElement('canvas'),w=1240,h=1754;c.width=w;c.height=h;const ctx=c.getContext('2d');const ink='#111',gray='#333',line='#59544b',soft='#f7f4ed',gold='#caa16a',deep='#07372f',green='#0d5b4d';ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);const x=70,ww=1100;ctx.fillStyle=deep;ctx.fillRect(x,62,ww,250);const g=ctx.createLinearGradient(x,62,x+ww,312);g.addColorStop(0,'#0b4c42');g.addColorStop(.55,'#117160');g.addColorStop(1,'#062923');ctx.fillStyle=g;ctx.fillRect(x,62,ww,250);drawBrandPattern(ctx,x,62,ww,250);drawFlower(ctx,x+ww/2,114,28);drawText(ctx,'弘峻莊園',x+ww/2,154,60,'800','#fff','center');drawText(ctx,'JADE GARDEN',x+ww/2,232,24,'500','#fff','center');ctx.fillStyle=gold;ctx.fillRect(x,312,ww,8);const metaY=350,boxH=88,boxW=ww/4;ctx.lineWidth=2;for(let i=0;i<4;i++){ctx.fillStyle=i%2?'#fff':'#fbfaf6';ctx.fillRect(x+i*boxW,metaY,boxW,boxH);ctx.strokeStyle=line;ctx.strokeRect(x+i*boxW,metaY,boxW,boxH);drawText(ctx,s.summary[i][0],x+i*boxW+18,369,18,'800',gray);printText(ctx,s.summary[i][1],x+i*boxW+18,402,24,'800')}drawText(ctx,'拆款計算報表',x,466,32,'900',ink);drawText(ctx,new Date().toLocaleString('zh-TW',{hour12:false}),x+ww,474,18,'600',gray,'right');const tableY=520,rowH=104;const c1=x,c2=x+230,c3=x+735,c4=x+900,c5=x+ww;ctx.fillStyle=soft;ctx.fillRect(x,tableY,ww,58);ctx.strokeStyle=ink;ctx.lineWidth=3;ctx.strokeRect(x,tableY,ww,58);[c2,c3,c4].forEach(cx=>{ctx.beginPath();ctx.moveTo(cx,tableY);ctx.lineTo(cx,tableY+58);ctx.stroke()});printText(ctx,'款項',c1+18,538,20,'800');printText(ctx,'備註',c2+18,538,20,'800');printText(ctx,'拆款方式',c4-18,538,20,'800','right');printText(ctx,'金額',c5-18,538,20,'800','right');let y=tableY+58;ctx.lineWidth=2;s.rows.forEach((r,i)=>{ctx.fillStyle=i%2?'#fff':'#fbfaf7';ctx.fillRect(x,y,ww,rowH);ctx.strokeStyle=line;ctx.strokeRect(x,y,ww,rowH);[c2,c3,c4].forEach(cx=>{ctx.beginPath();ctx.moveTo(cx,y);ctx.lineTo(cx,y+rowH);ctx.stroke()});printText(ctx,r.name,c1+18,y+34,22,'800');printText(ctx,r.note||'—',c2+18,y+36,r.note?18:20,r.note?'700':'600');printText(ctx,r.ratio,c4-18,y+36,r.ratio.length>7?18:22,'800','right');printText(ctx,money(r.value),c5-18,y+30,30,'900','right');y+=rowH});ctx.fillStyle='#fff';ctx.fillRect(x,y,ww,118);ctx.strokeStyle=deep;ctx.lineWidth=6;ctx.strokeRect(x,y,ww,118);ctx.fillStyle=gold;ctx.fillRect(x,y,ww,8);printText(ctx,'合計總額',c1+18,y+36,28,'900');printText(ctx,'TOTAL',c1+18,y+72,17,'700');printText(ctx,'100%',c4-18,y+44,23,'900','right');printText(ctx,money(s.total),c5-18,y+30,42,'900','right');drawText(ctx,'所有金額單位：萬元',x,1640,18,'600',gray);drawText(ctx,'本報表由弘峻莊園拆款計算機產生',x+ww,1640,18,'600',gray,'right');return c.toDataURL('image/png')}
-function printReportImage(){const dataUrl=buildReportImage();const w=window.open('','_blank');if(!w){alert('請允許彈出視窗後再按一次列印。');return}w.document.open();w.document.write(`<!doctype html><html lang="zh-Hant-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>弘峻莊園拆款報表</title><style>@page{size:A4;margin:0}html,body{margin:0;background:#fff}img{display:block;width:100%;height:auto}@media print{html,body{width:210mm;height:297mm;overflow:hidden}img{width:210mm;height:297mm;object-fit:contain}}</style></head><body><img id="report" alt="弘峻莊園拆款報表" src="${dataUrl}"><script>const img=document.getElementById('report');img.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`);w.document.close()}
+function drawText(ctx,str,x,y,size,weight='400',color='#111',align='left'){ctx.fillStyle=color;ctx.font=`${weight} ${size}px -apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",Arial,sans-serif`;ctx.textAlign=align;ctx.textBaseline='top';ctx.fillText(str,x,y)}function printText(ctx,str,x,y,size,weight='600',color='#111',align='left'){drawText(ctx,str,x,y,size,weight,color,align)}
+const BRAND_IMAGE_URL='hjzy-brand-banner.jpg';
+let brandImagePromise;
+function loadBrandImage(){
+  if(!brandImagePromise){
+    brandImagePromise=new Promise(resolve=>{
+      const img=new Image();
+      img.onload=()=>resolve(img);
+      img.onerror=()=>resolve(null);
+      img.src=BRAND_IMAGE_URL;
+    });
+  }
+  return brandImagePromise;
+}
+function drawCover(ctx,img,x,y,w,h){
+  const scale=Math.max(w/img.width,h/img.height);
+  const sw=w/scale,sh=h/scale;
+  const sx=(img.width-sw)/2,sy=(img.height-sh)/2;
+  ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);
+}
+async function buildReportImage(){
+  const s=snapshot(),brand=await loadBrandImage(),c=document.createElement('canvas'),w=1240,h=1754;
+  c.width=w;c.height=h;
+  const ctx=c.getContext('2d');
+  const ink='#111',gray='#222',line='#3a342c',soft='#f3f0e8',gold='#9b6b26',deep='#07372f';
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);
+  const x=70,ww=1100,brandY=58,brandH=330;
+  ctx.fillStyle=deep;ctx.fillRect(x,brandY,ww,brandH);
+  if(brand)drawCover(ctx,brand,x,brandY,ww,brandH);
+  ctx.strokeStyle=line;ctx.lineWidth=3;ctx.strokeRect(x,brandY,ww,brandH);
+  ctx.fillStyle=gold;ctx.fillRect(x,brandY+brandH,ww,9);
+  const metaY=430,boxH=82,boxW=ww/4;
+  ctx.lineWidth=2;
+  for(let i=0;i<4;i++){
+    ctx.fillStyle='#fff';ctx.fillRect(x+i*boxW,metaY,boxW,boxH);
+    ctx.strokeStyle=line;ctx.strokeRect(x+i*boxW,metaY,boxW,boxH);
+    drawText(ctx,s.summary[i][0],x+i*boxW+18,450,17,'900',gray);
+    printText(ctx,s.summary[i][1],x+i*boxW+18,482,23,'900',ink);
+  }
+  drawText(ctx,'拆款計算報表',x,558,33,'900',ink);
+  drawText(ctx,new Date().toLocaleString('zh-TW',{hour12:false}),x+ww,565,18,'700',gray,'right');
+  const tableY=606,rowH=88;
+  const c1=x,c2=x+230,c3=x+735,c4=x+900,c5=x+ww;
+  ctx.fillStyle=soft;ctx.fillRect(x,tableY,ww,54);
+  ctx.strokeStyle=ink;ctx.lineWidth=3;ctx.strokeRect(x,tableY,ww,54);
+  [c2,c3,c4].forEach(cx=>{ctx.beginPath();ctx.moveTo(cx,tableY);ctx.lineTo(cx,tableY+54);ctx.stroke()});
+  printText(ctx,'款項',c1+18,623,20,'900',ink);
+  printText(ctx,'備註',c2+18,623,20,'900',ink);
+  printText(ctx,'拆款方式',c4-18,623,20,'900',ink,'right');
+  printText(ctx,'金額',c5-18,623,20,'900',ink,'right');
+  let y=tableY+54;
+  ctx.lineWidth=2;
+  s.rows.forEach((r,i)=>{
+    ctx.fillStyle=i%2?'#fff':'#fbfaf5';ctx.fillRect(x,y,ww,rowH);
+    ctx.strokeStyle=line;ctx.strokeRect(x,y,ww,rowH);
+    [c2,c3,c4].forEach(cx=>{ctx.beginPath();ctx.moveTo(cx,y);ctx.lineTo(cx,y+rowH);ctx.stroke()});
+    printText(ctx,r.name,c1+18,y+30,22,'900',ink);
+    printText(ctx,r.note||'—',c2+18,y+31,r.note?17:20,r.note?'800':'700',ink);
+    printText(ctx,r.ratio,c4-18,y+31,r.ratio.length>7?17:21,'900',ink,'right');
+    printText(ctx,money(r.value),c5-18,y+27,30,'900',ink,'right');
+    y+=rowH;
+  });
+  ctx.fillStyle='#fff';ctx.fillRect(x,y,ww,106);
+  ctx.strokeStyle=ink;ctx.lineWidth=5;ctx.strokeRect(x,y,ww,106);
+  ctx.fillStyle=gold;ctx.fillRect(x,y,ww,8);
+  printText(ctx,'合計總額',c1+18,y+36,27,'900',ink);
+  printText(ctx,'TOTAL',c1+18,y+70,17,'800',gray);
+  printText(ctx,'100%',c4-18,y+44,23,'900',ink,'right');
+  printText(ctx,money(s.total),c5-18,y+30,42,'900',ink,'right');
+  drawText(ctx,'所有金額單位：萬元',x,1640,18,'700',gray);
+  drawText(ctx,'本報表由弘峻莊園拆款計算機產生',x+ww,1640,18,'700',gray,'right');
+  return c.toDataURL('image/png');
+}
+async function printReportImage(){
+  const w=window.open('','_blank');
+  if(!w){alert('請允許彈出視窗後再按一次列印。');return}
+  w.document.open();
+  w.document.write('<!doctype html><html lang="zh-Hant-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>弘峻莊園拆款報表</title><style>html,body{margin:0;background:#fff;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif}body{display:grid;place-items:center;min-height:100vh;color:#111}</style></head><body>報表產生中...</body></html>');
+  w.document.close();
+  const dataUrl=await buildReportImage();
+  w.document.open();
+  w.document.write(`<!doctype html><html lang="zh-Hant-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>弘峻莊園拆款報表</title><style>@page{size:A4;margin:0}html,body{margin:0;background:#fff}img{display:block;width:100%;height:auto}@media print{html,body{width:210mm;height:297mm;overflow:hidden}img{width:210mm;height:297mm;object-fit:contain}}</style></head><body><img id="report" alt="弘峻莊園拆款報表" src="${dataUrl}"><script>const img=document.getElementById('report');img.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`);
+  w.document.close();
+}
+
 Object.values(f).forEach(x=>x.addEventListener('input',render));printButton.addEventListener('click',printReportImage);render();
 </script>
 </body>
