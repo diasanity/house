@@ -16,7 +16,8 @@ const f={unit:unitInput,size:sizeInput,parking:parkInput,parkingPrice:parkPriceI
 const items=[['訂金','','固定5萬',p=>p.dep],['簽約金','','總價 6% 減訂金',p=>p.sign],['工程期款第一期','第一區屋頂版完成，開工後約第 19 個月','2%',p=>p.e1],['工程期款第二期','第二區屋頂版完成，開工後約第 26 個月','2%',p=>p.e2],['工程期款第三期','第三區屋頂版完成，開工後約第 32 個月','2%',p=>p.e3],['落架款','全區落架完成，開工後約第 40 個月','3%',p=>p.seal],['銀行貸款','','80%',p=>p.bank],['交屋保留款','','5%',p=>p.handOver]];
 function money(v){return `${Number(v||0).toLocaleString('zh-TW')} 萬`}function show(v,s=''){v=String(v||'').trim();return v?`${v}${s}`:'—'}function calcParts(total){const dep=5,sign=Math.ceil(total*.06)-dep,e1=Math.round(total*.02),e2=Math.round(total*.02),e3=Math.round(total*.02),bank=Math.floor(total*.8),handOver=Math.ceil(total*.05),seal=total-(dep+sign+e1+e2+e3+bank+handOver);return{dep,sign,e1,e2,e3,bank,handOver,seal}}function card(k,v){const d=document.createElement('div');d.className='summary-card';const b=document.createElement('b');b.textContent=k;const s=document.createElement('span');s.textContent=v;d.append(b,s);return d}function row(i,p){const d=document.createElement('div');d.className='row';const n=document.createElement('div');n.className='name';const t=document.createElement('strong');t.textContent=i[0];const m=document.createElement('small');m.textContent=i[1];n.append(t,m);const r=document.createElement('div');r.className='ratio';r.textContent=i[2];const v=document.createElement('div');v.className='value';v.textContent=money(i[3](p));d.append(n,r,v);return d}function snapshot(){const total=parseFloat(f.total.value)||0,p=calcParts(total);return{total,p,summary:[['戶別',show(f.unit.value)],['坪數',show(f.size.value,' 坪')],['車位',show(f.parking.value)],['車位價',show(f.parkingPrice.value,' 萬')]],rows:items.map(i=>({name:i[0],note:i[1],ratio:i[2],value:i[3](p)}))}}function render(){const s=snapshot();summary.replaceChildren(...s.summary.map(x=>card(x[0],x[1])));rows.replaceChildren(...items.map(i=>row(i,s.p)));totalDisplay.textContent=money(s.total)}
 function drawText(ctx,str,x,y,size,weight='400',color='#111',align='left'){ctx.fillStyle=color;ctx.font=`${weight} ${size}px -apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",Arial,sans-serif`;ctx.textAlign=align;ctx.textBaseline='top';ctx.fillText(str,x,y)}function printText(ctx,str,x,y,size,weight='600',color='#111',align='left'){drawText(ctx,str,x,y,size,weight,color,align)}
-const BRAND_IMAGE_URL='hjzy-brand-banner.jpg?v=clean2';
+function drawSpacedText(ctx,str,x,y,size,spacing,color,align='center'){ctx.fillStyle=color;ctx.font=`700 ${size}px Georgia,"Times New Roman",serif`;ctx.textBaseline='top';const chars=[...str],width=chars.reduce((sum,ch)=>sum+ctx.measureText(ch).width,0)+spacing*(chars.length-1);let px=align==='center'?x-width/2:x;chars.forEach(ch=>{ctx.fillText(ch,px,y);px+=ctx.measureText(ch).width+spacing})}
+const BRAND_IMAGE_URL='hjzy-brand-banner.jpg?v=sharptext';
 let brandImagePromise;
 function loadBrandImage(){
   if(!brandImagePromise){
@@ -44,6 +45,8 @@ async function buildReportImage(){
   const x=70,ww=1100,brandY=58,brandH=330;
   ctx.fillStyle=deep;ctx.fillRect(x,brandY,ww,brandH);
   if(brand)drawCover(ctx,brand,x,brandY,ww,brandH);
+  drawText(ctx,'弘峻莊園',x+ww/2,brandY+125,86,'800','#fff','center');
+  drawSpacedText(ctx,'JADE GARDEN',x+ww/2,brandY+226,27,8,'rgba(255,255,255,.9)');
   ctx.strokeStyle=line;ctx.lineWidth=3;ctx.strokeRect(x,brandY,ww,brandH);
   ctx.fillStyle=gold;ctx.fillRect(x,brandY+brandH,ww,9);
   const metaY=430,boxH=82,boxW=ww/4;
