@@ -17,34 +17,15 @@ const items=[['訂金','','固定5萬',p=>p.dep],['簽約金','','總價 6% 減�
 function money(v){return `${Number(v||0).toLocaleString('zh-TW')} 萬`}function show(v,s=''){v=String(v||'').trim();return v?`${v}${s}`:'—'}function calcParts(total){const dep=5,sign=Math.ceil(total*.06)-dep,e1=Math.round(total*.02),e2=Math.round(total*.02),e3=Math.round(total*.02),bank=Math.floor(total*.8),handOver=Math.ceil(total*.05),seal=total-(dep+sign+e1+e2+e3+bank+handOver);return{dep,sign,e1,e2,e3,bank,handOver,seal}}function card(k,v){const d=document.createElement('div');d.className='summary-card';const b=document.createElement('b');b.textContent=k;const s=document.createElement('span');s.textContent=v;d.append(b,s);return d}function row(i,p){const d=document.createElement('div');d.className='row';const n=document.createElement('div');n.className='name';const t=document.createElement('strong');t.textContent=i[0];const m=document.createElement('small');m.textContent=i[1];n.append(t,m);const r=document.createElement('div');r.className='ratio';r.textContent=i[2];const v=document.createElement('div');v.className='value';v.textContent=money(i[3](p));d.append(n,r,v);return d}function snapshot(){const total=parseFloat(f.total.value)||0,p=calcParts(total);return{total,p,summary:[['戶別',show(f.unit.value)],['坪數',show(f.size.value,' 坪')],['車位',show(f.parking.value)],['車位價',show(f.parkingPrice.value,' 萬')]],rows:items.map(i=>({name:i[0],note:i[1],ratio:i[2],value:i[3](p)}))}}function render(){const s=snapshot();summary.replaceChildren(...s.summary.map(x=>card(x[0],x[1])));rows.replaceChildren(...items.map(i=>row(i,s.p)));totalDisplay.textContent=money(s.total)}
 function drawText(ctx,str,x,y,size,weight='400',color='#111',align='left'){ctx.fillStyle=color;ctx.font=`${weight} ${size}px -apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",Arial,sans-serif`;ctx.textAlign=align;ctx.textBaseline='top';ctx.fillText(str,x,y)}function printText(ctx,str,x,y,size,weight='600',color='#111',align='left'){drawText(ctx,str,x,y,size,weight,color,align)}
 function drawSpacedText(ctx,str,x,y,size,spacing,color,align='center'){ctx.fillStyle=color;ctx.font=`700 ${size}px Georgia,"Times New Roman",serif`;ctx.textBaseline='top';const chars=[...str],width=chars.reduce((sum,ch)=>sum+ctx.measureText(ch).width,0)+spacing*(chars.length-1);let px=align==='center'?x-width/2:x;chars.forEach(ch=>{ctx.fillText(ch,px,y);px+=ctx.measureText(ch).width+spacing})}
-const BRAND_IMAGE_URL='hjzy-brand-banner.jpg?v=sharptext';
-let brandImagePromise;
-function loadBrandImage(){
-  if(!brandImagePromise){
-    brandImagePromise=new Promise(resolve=>{
-      const img=new Image();
-      img.onload=()=>resolve(img);
-      img.onerror=()=>resolve(null);
-      img.src=BRAND_IMAGE_URL;
-    });
-  }
-  return brandImagePromise;
-}
-function drawCover(ctx,img,x,y,w,h){
-  const scale=Math.max(w/img.width,h/img.height);
-  const sw=w/scale,sh=h/scale;
-  const sx=(img.width-sw)/2,sy=(img.height-sh)/2;
-  ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);
-}
+function drawHeaderPattern(ctx,x,y,w,h){const g=ctx.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,'#0f7668');g.addColorStop(.48,'#0b5149');g.addColorStop(1,'#082f2b');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.strokeStyle='rgba(224,205,166,.13)';ctx.lineWidth=3;for(let i=-80;i<w+140;i+=126){ctx.beginPath();ctx.moveTo(x+i,y+h+30);ctx.bezierCurveTo(x+i+28,y+h*.2,x+i+92,y+h*.2,x+i+120,y+h+30);ctx.stroke();ctx.beginPath();ctx.moveTo(x+i+60,y-30);ctx.bezierCurveTo(x+i+88,y+h*.8,x+i+152,y+h*.8,x+i+180,y-30);ctx.stroke()}ctx.strokeStyle='rgba(5,32,30,.24)';ctx.lineWidth=5;for(let i=0;i<w;i+=155){ctx.beginPath();ctx.moveTo(x+i,y);ctx.lineTo(x+i,y+h);ctx.stroke()}ctx.fillStyle='rgba(255,255,255,.05)';ctx.fillRect(x+w*.28,y,w*.18,h);ctx.fillStyle='rgba(0,0,0,.12)';ctx.fillRect(x+w*.74,y,w*.18,h);ctx.restore()}
 async function buildReportImage(){
-  const s=snapshot(),brand=await loadBrandImage(),c=document.createElement('canvas'),w=1240,h=1754;
+  const s=snapshot(),c=document.createElement('canvas'),w=1240,h=1754;
   c.width=w;c.height=h;
   const ctx=c.getContext('2d');
   const ink='#111',gray='#222',line='#3a342c',soft='#f3f0e8',gold='#9b6b26',deep='#07372f';
   ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);
   const x=70,ww=1100,brandY=58,brandH=330;
-  ctx.fillStyle=deep;ctx.fillRect(x,brandY,ww,brandH);
-  if(brand)drawCover(ctx,brand,x,brandY,ww,brandH);
+  drawHeaderPattern(ctx,x,brandY,ww,brandH);
   drawText(ctx,'弘峻莊園',x+ww/2,brandY+125,86,'800','#fff','center');
   drawSpacedText(ctx,'JADE GARDEN',x+ww/2,brandY+226,27,8,'rgba(255,255,255,.9)');
   ctx.strokeStyle=line;ctx.lineWidth=3;ctx.strokeRect(x,brandY,ww,brandH);
