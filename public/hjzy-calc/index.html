@@ -17,59 +17,62 @@ const items=[['訂金','','固定5萬',p=>p.dep],['簽約金','','總價 6% 減�
 function money(v){return `${Number(v||0).toLocaleString('zh-TW')} 萬`}function show(v,s=''){v=String(v||'').trim();return v?`${v}${s}`:'—'}function calcParts(total){const dep=5,sign=Math.ceil(total*.06)-dep,e1=Math.round(total*.02),e2=Math.round(total*.02),e3=Math.round(total*.02),bank=Math.floor(total*.8),handOver=Math.ceil(total*.05),seal=total-(dep+sign+e1+e2+e3+bank+handOver);return{dep,sign,e1,e2,e3,bank,handOver,seal}}function card(k,v){const d=document.createElement('div');d.className='summary-card';const b=document.createElement('b');b.textContent=k;const s=document.createElement('span');s.textContent=v;d.append(b,s);return d}function row(i,p){const d=document.createElement('div');d.className='row';const n=document.createElement('div');n.className='name';const t=document.createElement('strong');t.textContent=i[0];const m=document.createElement('small');m.textContent=i[1];n.append(t,m);const r=document.createElement('div');r.className='ratio';r.textContent=i[2];const v=document.createElement('div');v.className='value';v.textContent=money(i[3](p));d.append(n,r,v);return d}function snapshot(){const total=parseFloat(f.total.value)||0,p=calcParts(total);return{total,p,summary:[['戶別',show(f.unit.value)],['坪數',show(f.size.value,' 坪')],['車位',show(f.parking.value)],['車位價',show(f.parkingPrice.value,' 萬')]],rows:items.map(i=>({name:i[0],note:i[1],ratio:i[2],value:i[3](p)}))}}function render(){const s=snapshot();summary.replaceChildren(...s.summary.map(x=>card(x[0],x[1])));rows.replaceChildren(...items.map(i=>row(i,s.p)));totalDisplay.textContent=money(s.total)}
 function drawText(ctx,str,x,y,size,weight='400',color='#111',align='left'){ctx.fillStyle=color;ctx.font=`${weight} ${size}px -apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",Arial,sans-serif`;ctx.textAlign=align;ctx.textBaseline='top';ctx.fillText(str,x,y)}function printText(ctx,str,x,y,size,weight='600',color='#111',align='left'){drawText(ctx,str,x,y,size,weight,color,align)}
 function drawSpacedText(ctx,str,x,y,size,spacing,color,align='center'){ctx.fillStyle=color;ctx.font=`700 ${size}px Georgia,"Times New Roman",serif`;ctx.textBaseline='top';const chars=[...str],width=chars.reduce((sum,ch)=>sum+ctx.measureText(ch).width,0)+spacing*(chars.length-1);let px=align==='center'?x-width/2:x;chars.forEach(ch=>{ctx.fillText(ch,px,y);px+=ctx.measureText(ch).width+spacing})}
+function roundRect(ctx,x,y,w,h,r,fill,stroke,lineWidth=1){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lineWidth;ctx.stroke()}}
 function drawHeaderPattern(ctx,x,y,w,h){const g=ctx.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,'#0f7668');g.addColorStop(.48,'#0b5149');g.addColorStop(1,'#082f2b');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.strokeStyle='rgba(224,205,166,.13)';ctx.lineWidth=3;for(let i=-80;i<w+140;i+=126){ctx.beginPath();ctx.moveTo(x+i,y+h+30);ctx.bezierCurveTo(x+i+28,y+h*.2,x+i+92,y+h*.2,x+i+120,y+h+30);ctx.stroke();ctx.beginPath();ctx.moveTo(x+i+60,y-30);ctx.bezierCurveTo(x+i+88,y+h*.8,x+i+152,y+h*.8,x+i+180,y-30);ctx.stroke()}ctx.strokeStyle='rgba(5,32,30,.24)';ctx.lineWidth=5;for(let i=0;i<w;i+=155){ctx.beginPath();ctx.moveTo(x+i,y);ctx.lineTo(x+i,y+h);ctx.stroke()}ctx.fillStyle='rgba(255,255,255,.05)';ctx.fillRect(x+w*.28,y,w*.18,h);ctx.fillStyle='rgba(0,0,0,.12)';ctx.fillRect(x+w*.74,y,w*.18,h);ctx.restore()}
 async function buildReportImage(){
   const s=snapshot(),c=document.createElement('canvas'),w=1240,h=1754;
   c.width=w;c.height=h;
   const ctx=c.getContext('2d');
-  const ink='#111',gray='#222',line='#3a342c',soft='#f3f0e8',gold='#9b6b26',deep='#07372f';
-  ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);
-  const x=70,ww=1100,brandY=58,brandH=330;
-  drawHeaderPattern(ctx,x,brandY,ww,brandH);
-  drawText(ctx,'弘峻莊園',x+ww/2,brandY+125,86,'800','#fff','center');
-  drawSpacedText(ctx,'JADE GARDEN',x+ww/2,brandY+226,27,8,'rgba(255,255,255,.9)');
-  ctx.strokeStyle=line;ctx.lineWidth=3;ctx.strokeRect(x,brandY,ww,brandH);
-  ctx.fillStyle=gold;ctx.fillRect(x,brandY+brandH,ww,9);
-  const metaY=430,boxH=82,boxW=ww/4;
-  ctx.lineWidth=2;
+  const ink='#142421',muted='#66726e',line='#ded6ca',soft='#f8f5ee',gold='#a97d35',deep='#0b3e36';
+  const page=ctx.createLinearGradient(0,0,0,h);page.addColorStop(0,'#f1e6d6');page.addColorStop(.22,'#fbfaf7');page.addColorStop(1,'#f4f1ea');ctx.fillStyle=page;ctx.fillRect(0,0,w,h);
+  const x=70,ww=1100,brandY=58,brandH=250;
+  roundRect(ctx,x,brandY,ww,brandH,18,'#0b3e36',null);
+  ctx.save();ctx.beginPath();ctx.rect(x,brandY,ww,brandH);ctx.clip();drawHeaderPattern(ctx,x,brandY,ww,brandH);ctx.restore();
+  drawText(ctx,'PAYMENT CALCULATOR',x+42,brandY+40,20,'800','#e8d1ad','left');
+  drawText(ctx,'弘峻莊園',x+ww/2,brandY+92,78,'800','#fff','center');
+  drawSpacedText(ctx,'JADE GARDEN',x+ww/2,brandY+180,26,9,'rgba(255,255,255,.9)');
+  ctx.fillStyle=gold;ctx.fillRect(x,brandY+brandH-8,ww,8);
+  const metaY=340,boxH=86,boxGap=14,boxW=(ww-boxGap*3)/4;
   for(let i=0;i<4;i++){
-    ctx.fillStyle='#fff';ctx.fillRect(x+i*boxW,metaY,boxW,boxH);
-    ctx.strokeStyle=line;ctx.strokeRect(x+i*boxW,metaY,boxW,boxH);
-    drawText(ctx,s.summary[i][0],x+i*boxW+18,450,17,'900',gray);
-    printText(ctx,s.summary[i][1],x+i*boxW+18,482,23,'900',ink);
+    const bx=x+i*(boxW+boxGap);
+    roundRect(ctx,bx,metaY,boxW,boxH,10,'rgba(255,255,255,.92)',line,1.5);
+    drawText(ctx,s.summary[i][0],bx+20,metaY+17,17,'900',muted);
+    printText(ctx,s.summary[i][1],bx+20,metaY+49,24,'900',ink);
   }
-  drawText(ctx,'拆款計算報表',x,558,33,'900',ink);
-  drawText(ctx,new Date().toLocaleString('zh-TW',{hour12:false}),x+ww,565,18,'700',gray,'right');
-  const tableY=606,rowH=88;
-  const c1=x,c2=x+230,c3=x+735,c4=x+900,c5=x+ww;
-  ctx.fillStyle=soft;ctx.fillRect(x,tableY,ww,54);
-  ctx.strokeStyle=ink;ctx.lineWidth=3;ctx.strokeRect(x,tableY,ww,54);
-  [c2,c3,c4].forEach(cx=>{ctx.beginPath();ctx.moveTo(cx,tableY);ctx.lineTo(cx,tableY+54);ctx.stroke()});
-  printText(ctx,'款項',c1+18,623,20,'900',ink);
-  printText(ctx,'備註',c2+18,623,20,'900',ink);
-  printText(ctx,'拆款方式',c4-18,623,20,'900',ink,'right');
-  printText(ctx,'金額',c5-18,623,20,'900',ink,'right');
-  let y=tableY+54;
-  ctx.lineWidth=2;
+  drawText(ctx,'拆款計算報表',x,470,36,'900',ink);
+  drawText(ctx,new Date().toLocaleString('zh-TW',{hour12:false}),x+ww,482,19,'700',muted,'right');
+  const tableY=535,rowH=84,headH=58,totalH=118;
+  const c1=x,c2=x+250,c3=x+770,c4=x+930,c5=x+ww;
+  roundRect(ctx,x,tableY,ww,headH+rowH*s.rows.length+totalH,14,'rgba(255,255,255,.96)',line,1.5);
+  ctx.save();ctx.beginPath();ctx.rect(x,tableY,ww,headH+rowH*s.rows.length+totalH);ctx.clip();
+  ctx.fillStyle=soft;ctx.fillRect(x,tableY,ww,headH);
+  ctx.fillStyle='rgba(11,62,54,.04)';ctx.fillRect(x,tableY+headH,ww,rowH*s.rows.length);
+  ctx.strokeStyle=line;ctx.lineWidth=1.5;
+  [c2,c3,c4].forEach(cx=>{ctx.beginPath();ctx.moveTo(cx,tableY);ctx.lineTo(cx,tableY+headH+rowH*s.rows.length);ctx.stroke()});
+  ctx.beginPath();ctx.moveTo(x,tableY+headH);ctx.lineTo(x+ww,tableY+headH);ctx.stroke();
+  printText(ctx,'款項',c1+22,tableY+19,20,'900',ink);
+  printText(ctx,'備註',c2+22,tableY+19,20,'900',ink);
+  printText(ctx,'拆款方式',c4-22,tableY+19,20,'900',ink,'right');
+  printText(ctx,'金額',c5-22,tableY+19,20,'900',ink,'right');
+  let y=tableY+headH;
   s.rows.forEach((r,i)=>{
-    ctx.fillStyle=i%2?'#fff':'#fbfaf5';ctx.fillRect(x,y,ww,rowH);
-    ctx.strokeStyle=line;ctx.strokeRect(x,y,ww,rowH);
-    [c2,c3,c4].forEach(cx=>{ctx.beginPath();ctx.moveTo(cx,y);ctx.lineTo(cx,y+rowH);ctx.stroke()});
-    printText(ctx,r.name,c1+18,y+30,22,'900',ink);
-    printText(ctx,r.note||'—',c2+18,y+31,r.note?17:20,r.note?'800':'700',ink);
-    printText(ctx,r.ratio,c4-18,y+31,r.ratio.length>7?17:21,'900',ink,'right');
-    printText(ctx,money(r.value),c5-18,y+27,30,'900',ink,'right');
+    ctx.fillStyle=i%2?'rgba(255,255,255,.72)':'rgba(248,245,238,.72)';ctx.fillRect(x,y,ww,rowH);
+    ctx.strokeStyle='#e8e1d7';ctx.beginPath();ctx.moveTo(x,y+rowH);ctx.lineTo(x+ww,y+rowH);ctx.stroke();
+    printText(ctx,r.name,c1+22,y+27,22,'900',ink);
+    printText(ctx,r.note||'—',c2+22,y+29,r.note?17:20,r.note?'800':'700',r.note?ink:muted);
+    printText(ctx,r.ratio,c4-22,y+29,r.ratio.length>7?17:21,'900',ink,'right');
+    printText(ctx,money(r.value),c5-22,y+24,31,'900',ink,'right');
     y+=rowH;
   });
-  ctx.fillStyle='#fff';ctx.fillRect(x,y,ww,106);
-  ctx.strokeStyle=ink;ctx.lineWidth=5;ctx.strokeRect(x,y,ww,106);
+  ctx.fillStyle=deep;ctx.fillRect(x,y,ww,totalH);
   ctx.fillStyle=gold;ctx.fillRect(x,y,ww,8);
-  printText(ctx,'合計總額',c1+18,y+36,27,'900',ink);
-  printText(ctx,'TOTAL',c1+18,y+70,17,'800',gray);
-  printText(ctx,'100%',c4-18,y+44,23,'900',ink,'right');
-  printText(ctx,money(s.total),c5-18,y+30,42,'900',ink,'right');
-  drawText(ctx,'所有金額單位：萬元',x,1640,18,'700',gray);
-  drawText(ctx,'本報表由弘峻莊園拆款計算機產生',x+ww,1640,18,'700',gray,'right');
+  printText(ctx,'合計總額',c1+22,y+36,28,'900','#fff');
+  printText(ctx,'TOTAL',c1+22,y+72,17,'800','rgba(255,255,255,.82)');
+  printText(ctx,'100%',c4-22,y+49,24,'900','#fff','right');
+  printText(ctx,money(s.total),c5-22,y+31,45,'900','#fff','right');
+  ctx.restore();
+  drawText(ctx,'所有金額單位：萬元',x,1640,18,'700',muted);
+  drawText(ctx,'本報表由弘峻莊園拆款計算機產生',x+ww,1640,18,'700',muted,'right');
   return c.toDataURL('image/png');
 }
 async function printReportImage(){
